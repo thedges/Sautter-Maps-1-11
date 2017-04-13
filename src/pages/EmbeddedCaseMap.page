@@ -1,0 +1,7 @@
+<apex:page standardController="Case">
+<apex:outputText value="{!Case.Address__c}" rendered="false" />
+<apex:outputText value="{!Case.Location__Latitude__s}" rendered="false"/>
+<apex:outputText value="{!Case.Location__Longitude__s}" rendered="false"/>
+<c:EmbeddedMapComponent type="Case" object="{!Case}" address="Address__c" 
+latitude="Location__Latitude__s" longitude="Location__Longitude__s"/>
+</apex:page>

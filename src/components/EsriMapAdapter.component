@@ -1,0 +1,115 @@
+<apex:component >
+<apex:attribute name="mapDiv" type="String" required="true" description="id of the DIV component where map is to be drawn."/>
+<link rel="stylesheet" href="//js.arcgis.com/3.11/esri/css/esri.css"/>
+<script>
+var dojoConfig = {
+    async:false
+  };
+</script>
+<script src="//js.arcgis.com/3.11/"></script>
+ <script>
+var MapAdapter = {
+	init: function() {
+	},
+	drawMap: function(pCenterLat, pCenterLon, pZoom, pMapLoaded) {
+		var _self = this;
+		_self.showObject = false;
+		require(["esri/map", "esri/geometry/webMercatorUtils", "esri/geometry/Point"], 
+		function(Map, webMercatorUtils, Point) {
+	    	_self.map = new Map("{!mapDiv}", {
+    	  	basemap: "topo",
+       	  	center: [pCenterLon, pCenterLat],
+          	zoom: pZoom
+        	});	
+        	_self.popup = _self.map.infoWindow;
+       		_self.map.on('click', function(event) {
+    			if (event.graphic && event.graphic.click) {
+    				event.graphic.click();
+    				_self.showObject = true;
+    			} else {
+    				if (_self.showObject == true) {
+	    				_self.popup.hide();
+	    				_self.showObject = false;
+    				}
+    			}
+    		});
+			_self.map.on("mouse-up", function(evt) {
+				if (_self.panEventCallback) {
+					var latLng = webMercatorUtils.webMercatorToGeographic(_self.map.extent.getCenter());
+					_self.geocodeLocation("", latLng.y, latLng.x, _self.panEventCallback);		
+				}
+  			});
+	        if (pMapLoaded) {
+    	    	_self.map.on("load", pMapLoaded);
+        	}
+        });
+    },
+	mapPanEvent: function(pPanEventCallback) {
+		this.panEventCallback = pPanEventCallback;
+    },
+    centerMap: function(pLat, pLon) {
+    	this.map.centerAt([pLon, pLat]);
+    },
+    geocodeLocation: function(pId, pLat, pLon, pAddressCallback) {
+    	var _self = this;
+    	require(["esri/tasks/locator", "esri/geometry/Point"], function(Locator, Point) {
+    		if (_self.locator == null) {
+				_self.locator = new Locator("https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer");    		
+    		}
+	    	var location = new Point(pLon, pLat);
+		  	_self.locator.locationToAddress(location, 100, function(pResponse) {
+	    		if (pResponse.address) {
+	    			var address = pResponse.address.Match_addr;
+	    			var lat = pResponse.location.y;
+	    			var lon = pResponse.location.x;
+	    			pAddressCallback(pId, address, lat, lon);
+	    		}
+	    	});
+  		});
+    },
+    geocodeAddress: function(pId, pAddress, pLocationCallback) {
+    	var params = { address: {"SingleLine": pAddress }, maxLocations: 1, outFields: ["Loc_name"] };
+    	var _self = this;
+    	require(["esri/tasks/locator"], function(Locator) {
+    		if (_self.locator == null) {
+				_self.locator = new Locator("https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer");    		
+    		}
+    		_self.locator.addressToLocations(params, function(pResult) {
+    			if (pResult.length > 0) {
+    				var address  = pResult[0].address;
+    				var lat = pResult[0].location.getLatitude();
+    				var lon = pResult[0].location.getLongitude();
+    				pLocationCallback(pId, address, lat, lon);
+    			}
+    		});
+    	});
+    },			
+    addDropPin: function(pId, pLat, pLon, pIconURL, pHtml) {
+    	var _self = this;
+    	require(["esri/geometry/Point", "esri/symbols/PictureMarkerSymbol", "esri/graphic"], 
+    	function(Point, PictureMarkerSymbol, Graphic) {
+    		var marker = new PictureMarkerSymbol(pIconURL, 36, 36);
+    		var point = new Point(pLon, pLat);
+    		var graphic = new Graphic(point, marker);
+    		_self.map.graphics.add(graphic);
+    		if (pHtml) {
+    			graphic.click = function() {
+    				_self.popup.setContent(pHtml);
+    				_self.popup.show(point);
+    			}
+    		} // endif
+    	});
+    },
+    showLayer: function(pUrl) {
+    	var _self = this;
+    	require(["esri/layers/KMLLayer"], function(KMLLayer) {
+    		if (_self.kml != null) {
+    			_self.map.removeLayer(_self.kml);
+    		} // endif
+			_self.kml = new KMLLayer(pUrl); 
+    		_self.map.addLayer(_self.kml);    	
+    	});
+    }
+};
+</script>
+</apex:component>

@@ -1,0 +1,88 @@
+<apex:component >
+<apex:attribute name="mapDiv" type="String" required="true" description="id of the DIV component where map is to be drawn."/>
+<script type="text/javascript" src="//ecn.dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=7.0&s=1"></script>
+<script>
+var MapAdapter = {
+    init: function() { 
+        Microsoft.Maps.loadModule('Microsoft.Maps.Search');
+        Microsoft.Maps.loadModule('Microsoft.Maps.Themes.BingTheme');
+    },
+    drawMap: function(pCenterLat, pCenterLon, pZoom, pMapLoaded) {
+        var mapOptions = { credentials: "{!$Setup.SautterMaps__c.BingMapsKey__c}",
+            center: new Microsoft.Maps.Location(pCenterLat, pCenterLon),
+            mapTypeId: Microsoft.Maps.MapTypeId.road,
+            zoom: pZoom };
+        var div = document.getElementById("{!mapDiv}");
+        this.map = new Microsoft.Maps.Map(div, mapOptions);
+        if (pMapLoaded) {
+            Microsoft.Maps.Events.addHandler(this.map, 'tiledownloadcomplete', pMapLoaded);
+        }
+    },
+    mapPanEvent: function(pPanEventCallback) {
+        this.panEventCallback = pPanEventCallback;
+        var _self = this;
+        Microsoft.Maps.Events.addHandler(this.map, 'mouseup', function() {
+            var newCenter = _self.map.getCenter();
+            _self.geocodeLocation("", newCenter.latitude, newCenter.longitude, _self.panEventCallback);
+        });
+    },
+    centerMap: function(pLat, pLon) {
+        var newCenter = new Microsoft.Maps.Location(pLat, pLon);
+        this.map.setView({ center: newCenter });
+    },
+    geocodeLocation: function(pId, pLat, pLon, pAddressCallback) {
+        var _self = this;
+        var location = new Microsoft.Maps.Location(pLat, pLon);
+        Microsoft.Maps.loadModule('Microsoft.Maps.Search', { callback: function() {
+            if (_self.locator == null) {
+                _self.locator = new Microsoft.Maps.Search.SearchManager(_self.map);
+            }
+            _self.locator.reverseGeocode( { location: location, callback: function(pResponse, pUserData) {
+                if (pResponse.name != null) {
+                    var address = pResponse.name;
+                    var lat = pResponse.location.latitude;
+                    var lon = pResponse.location.longitude;
+                    pAddressCallback(pId, address, lat, lon);
+                }
+            }});
+        }});
+    },
+    geocodeAddress: function(pId, pAddress, pLocationCallback) {
+        var _self = this;
+        Microsoft.Maps.loadModule('Microsoft.Maps.Search', { callback: function() {
+            if (_self.locator == null) {
+                _self.locator = new Microsoft.Maps.Search.SearchManager(_self.map);
+            }
+            _self.locator.geocode( { where: pAddress, callback: function(pResponse) {
+                if (pResponse.results.length > 0) {
+                    var result = pResponse.results[0];
+                    var address = result.name;
+                    var lat = result.location.latitude;
+                    var lon = result.location.longitude;
+                    pLocationCallback(pId, address, lat, lon);
+                }       
+            }});
+        }});
+    },
+    addDropPin: function(pId, pLat, pLon, pIconURL, pHtml, pDropCallback) {
+        var _self = this;
+        var latLng = new Microsoft.Maps.Location(pLat, pLon);
+        var markerOpts = { draggable: false }; // D&D doesn't work correctly with Bing Maps
+        if (pIconURL != null) markerOpts.icon = pIconURL;
+        var marker = new Microsoft.Maps.Pushpin(latLng, markerOpts);
+        this.map.entities.push(marker);
+        if (pHtml != null) {
+            var infoWindow = new Microsoft.Maps.Infobox(latLng, {description: pHtml, id: pId, visible: false});
+            this.map.entities.push(infoWindow);
+            Microsoft.Maps.Events.addHandler(marker, 'click', function() {
+                infoWindow.setOptions({visible: true});
+            });
+        }
+        marker.id = pId;
+    },
+    showLayer: function(pUrl) {
+        alert('KML Layers are not supported in Bing Maps');
+    }
+};
+</script>
+</apex:component>

@@ -1,0 +1,86 @@
+<apex:component layout="block">
+<apex:attribute name="type" description="The Object type of records we are viewing."
+    type="String" required="true"/>
+<apex:attribute name="recs" description="The list of records we are viewing."
+    type="SObject[]" required="true"/>
+<apex:attribute name="latitude" description="The Field Name that contains the latitude value."
+    type="String" required="true"/>
+<apex:attribute name="longitude" description="The Field Name that contains the longitude value."
+    type="String" required="true"/>
+<apex:attribute name="address" description="The Field Name that contains the address value."
+    type="String" required="true"/>
+<apex:attribute name="link" description="The Field Name that contains the link text."
+    type="String" required="true"/>
+<apex:attribute name="desc" description="The Field Name that contains description field."
+    type="String" required="true"/>
+<apex:attribute name="height" description="The height in pixels of the Map." 
+    type="String" required="false" default="600"/>
+<apex:attribute name="iconField" description="Custom formula field on the object that returns the path to the icon for the object."
+    type="String" required="false" default="Id"/>
+<script>
+var __sfdcSessionId = '{!GETSESSIONID()}';
+</script>
+<script src="../../soap/ajax/31.0/connection.js" type="text/javascript"></script>
+<script>
+var ListViewMapComponent = {
+    defaultMapIcon: '{!URLFOR($Resource.mapIcons, $Setup.SautterMaps__c.Default_Map_Icon__c)}',
+    zoom: {!$Setup.SautterMaps__c.List_Map_Zoom__c},
+    mapPoints: [
+<apex:repeat var="c" value="{!recs}">
+    { id: "{!c.Id}", link: "{!JSENCODE(c[link])}", desc: "{!JSENCODE(c[desc])}", lat: "{!c[latitude]}", lon: "{!c[longitude]}", icon: "{!c[iconField]}" },
+</apex:repeat>  
+    null ],
+    getMapIcon: function(point) {
+        var result = null;
+        var baseURL = '{!URLFOR($Resource.mapIcons)}';
+        if ('{!iconField}' == 'Id') {
+            result = this.defaultMapIcon;
+        } else {
+            var urlSplit = baseURL.split('?');
+            result = urlSplit[0] + point.icon;
+            if (urlSplit.length > 1) {
+              result = result + '?' + urlSplit[1];
+            }
+        }
+        return result;
+    },
+    plotPoints: function() {
+        for (var k = 0; k < this.mapPoints.length - 1; k++) {
+            var point = this.mapPoints[k];
+            var html = '<a href="/'+point.id+'">'+point.link+'</a><br/>'+point.desc; 
+            this.MapAdapter.addDropPin(point.id, point.lat, point.lon, this.getMapIcon(point), html, ListViewMapComponent.pointDropped);
+        }
+    },
+    pointDropped: function(pId, pAddress, pLat, pLon) {
+        console.log(pId + ' ' + pAddress + ' ' + pLat + ' ' + pLon);
+        ListViewMapComponent.MapServer.showAddressBar(pAddress);
+        var obj = new sforce.SObject("{!type}");
+        obj.Id = pId;
+        obj.{!latitude} = pLat;
+        obj.{!longitude} = pLon;
+        obj.{!address} = pAddress;
+        ListViewMapComponent.saveObject = obj;
+    },
+    saveLocation: function() {
+        if (ListViewMapComponent.saveObject != null) {
+            sforce.connection.update([ListViewMapComponent.saveObject]);    
+        }
+        ListViewMapComponent.MapServer.hideAddressBar();
+    },
+    showLayer: function(pUrl) {
+        if (this.MapAdapter.showLayer != null) {
+            this.MapAdapter.showLayer(pUrl);
+        } // endif
+    }
+};
+window.mapLoadComplete = function(pMapServer, pMapAdapter) {
+    ListViewMapComponent.MapServer = pMapServer;
+    ListViewMapComponent.MapAdapter = pMapAdapter;
+    ListViewMapComponent.plotPoints();
+    ListViewMapComponent.MapServer.addressLinkClicked = function() {
+        ListViewMapComponent.saveLocation();
+    };
+}
+</script>
+<apex:iframe src="/apex/MapServerPage" height="{!height}px" width="100%" id="MapServerPage" scrolling="false"/> 
+</apex:component>

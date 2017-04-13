@@ -1,0 +1,26 @@
+<apex:page showHeader="false" sidebar="false" cache="false">
+<c:MapVisualForceTabComponent >
+<script>
+function mapLoadComplete() {
+	parent.mapLoadComplete(MapServer, MapAdapter);	
+}
+var MapServer = {
+	init: function() {
+		MapAdapter.init();
+		MapAdapter.drawMap({!$Setup.SautterMaps__c.Default_Center_Latitude__c}, 
+			{!$Setup.SautterMaps__c.Default_Center_Longitude__c}, {!$Setup.SautterMaps__c.List_Map_Zoom__c}, mapLoadComplete);
+	},
+	showAddressBar: function(pAddress) {
+		$('#address').text(pAddress);
+		$('#addressDiv').removeClass('invisible');
+	},
+	hideAddressBar: function() {
+		$('#addressDiv').addClass('invisible');
+	}
+};
+window.onload = function() {
+	MapServer.init();
+}
+</script>
+</c:MapVisualForceTabComponent>
+</apex:page>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexComponent xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>31.0</apiVersion>
+    <description>This component embeds a map on a page layout.  It is used by a VisualForce page that is designed for use in a page layout (vs standalone).</description>
+    <label>EmbeddedMapComponent</label>
+</ApexComponent>

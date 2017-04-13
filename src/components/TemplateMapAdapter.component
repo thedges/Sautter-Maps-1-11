@@ -1,0 +1,43 @@
+<apex:component >
+<apex:attribute name="mapDiv" type="String" required="true" description="id of the DIV component where map is to be drawn."/>
+<!-- Add Map Technology Javascript and CSS files here -->
+<script>
+var MapAdapter = {
+	init: function() {
+		// Perform any initialization functions here.
+	},
+	drawMap: function(pCenterLat, pCenterLon, pZoom, pMapLoaded) {
+		// Draw the map at pCenterLat, pCenterLon, with pZoom level.
+	        if (pMapLoaded) {
+    	    	// Use native call to Map API to invoke pMapLoaded function when map has loaded
+        	}
+        });
+    },
+	mapPanEvent: function(pPanEventCallback) {
+		// When the map is panned and the user releases the mouse key, call pPanEventCallback.
+		// pPanEventCallback: function(pId, pAddress, pLat, pLon)
+    },
+    centerMap: function(pLat, pLon) {
+    	// Center the map at pLat, pLon
+    },
+    geocodeLocation: function(pId, pLat, pLon, pAddressCallback) {
+    	// Given a pLat and pLon, call pAddressCallback with the address, passing through  pId.
+    	// pAddressCallback: function(pId, address, lat, lon);
+    },
+    geocodeAddress: function(pId, pAddress, pLocationCallback) {
+    	// Given a pAddress call pAddressCallback with the lat, lon location of the address, passing through pId
+    	// pAddressCallback: function(pId, address, lat, lon);
+    },			
+    addDropPin: function(pId, pLat, pLon, pIconURL, pHtml) {
+    	// Drop a pin at pLat, pLon with the icon image at pIconURL.
+    	// When the pin is clicked, display an info window with pHtml at the location.
+    	// Make sure there's a way to close the info window.  If there's not a close button,
+    	// clicking anywhere on the map should close the info window.
+    },
+    showLayer: function(pUrl) {
+    	// If available, attempt to plot the KML file located at pUrl on the map.
+    	// If not available, use alert("XXX Maps does not support KML Layers.");
+    }
+};
+</script>
+</apex:component>

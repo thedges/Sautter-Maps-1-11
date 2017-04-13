@@ -1,0 +1,27 @@
+<apex:page standardController="Case" tabStyle="Case_Map_View__tab" extensions="SautterMaps" recordSetVar="allObjects" showHeader="true" sidebar="false" cache="false">
+
+ <apex:form id="theForm">
+    <apex:panelGrid columns="4">
+      <apex:outputLabel value="View:"/>
+      <apex:selectList value="{!filterId}" size="1" id="viewList">
+        <apex:actionSupport event="onchange"/>
+        <apex:selectOptions value="{!listviewoptions}"/>
+      </apex:selectList>
+        <apex:outputLabel value="with layer: "/>
+        <apex:selectList size="1" id="layerSelect" onchange="ListViewMapComponent.showLayer(this.value)">
+        <apex:selectOptions value="{!MapLayers}"/>
+      </apex:selectList>
+    </apex:panelGrid>
+  </apex:form> 
+  
+<apex:repeat var="c" value="{!allObjects}">
+<apex:outputText value="{!c.MapSubject__c}" rendered="false" />
+<apex:outputText value="{!c.MapDescription__c}" rendered="false" />
+<apex:outputText value="{!c.Location__Latitude__s}" rendered="false"/>
+<apex:outputText value="{!c.Location__Longitude__s}" rendered="false"/>
+<apex:outputText value="{!c.iconField__c}" rendered="false"/>
+</apex:repeat>
+
+<c:ListViewMapComponent recs="{!allObjects}" iconField="iconField__c" address="Address__c" type="Case" latitude="Location__Latitude__s" longitude="Location__Longitude__s" link="MapSubject__c" desc="MapDescription__c"/> 
+
+</apex:page>

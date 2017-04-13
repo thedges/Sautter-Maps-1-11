@@ -1,0 +1,84 @@
+<apex:component >
+<apex:attribute name="mapDiv" type="String" required="true" description="id of the DIV component where map is to be drawn."/>
+<script src="//maps.googleapis.com/maps/api/js?key={!$Setup.SautterMaps__c.GoogleMapsKey__c}"></script>
+<script>
+var MapAdapter = {
+	init: function() { 
+    	this.geocoder = new google.maps.Geocoder();	
+	},
+	drawMap: function(pCenterLat, pCenterLon, pZoom, pMapLoaded) {
+    	var mapOptions = {
+      		center: new google.maps.LatLng(pCenterLat, pCenterLon),
+      		zoom: pZoom,
+      		mapTypeId: google.maps.MapTypeId.ROADMAP
+    	};
+    	var div = document.getElementById("{!mapDiv}");
+    	this.map = new google.maps.Map(div, mapOptions);
+    	if (pMapLoaded) {
+    		google.maps.event.addListener(this.map, 'tilesloaded', pMapLoaded);
+    	}
+	},
+	mapPanEvent: function(pPanEventCallback) {
+		this.panEventCallback = pPanEventCallback;
+		var _self = this;
+		google.maps.event.addListener(this.map, 'mouseup', function() {
+			var newCenter = _self.map.getCenter();
+			_self.geocodeLocation("", newCenter.lat(), newCenter.lng(), _self.panEventCallback);
+		});
+    },
+    centerMap: function(pLat, pLon) {
+    	this.map.panTo(new google.maps.LatLng(pLat, pLon));
+    },
+    geocodeLocation: function(pId, pLat, pLon, pAddressCallback) {
+		var _self = this;
+		var location = new google.maps.LatLng(pLat, pLon);
+		_self.geocoder.geocode( { location: location }, function(pResponse) {
+			if (pResponse.length > 0) {
+				var address = pResponse[0].formatted_address;
+				var center = _self.map.getCenter();
+				pAddressCallback(pId, address, center.lat(), center.lng());
+			}
+		});
+    },
+    geocodeAddress: function(pId, pAddress, pLocationCallback) {
+    	var _self = this;
+    	_self.geocoder.geocode( { address: pAddress }, function(pResponse) {
+ 			if (pResponse.length > 0) {
+ 				var address = pResponse[0].formatted_address;
+ 				var lat = pResponse[0].geometry.location.lat();
+ 				var lon = pResponse[0].geometry.location.lng();
+ 				pLocationCallback(pId, address, lat, lon);
+ 			}   	
+    	});
+    },
+    addDropPin: function(pId, pLat, pLon, pIconURL, pHtml, pDropCallback) {
+    	var _self = this;
+    	var draggable = (pDropCallback != null);
+  		var latLng = new google.maps.LatLng(pLat, pLon);
+  		var markerOpts = { map: this.map, position: latLng, draggable: draggable };
+  		if (pIconURL != null) markerOpts.icon = pIconURL;
+    	var marker = new google.maps.Marker(markerOpts);
+  		if (pHtml != null) {
+  			var infoWindow = new google.maps.InfoWindow({content: pHtml, position: markerOpts.position});
+  			google.maps.event.addListener(marker, 'click', function() {
+  				infoWindow.open(_self.map,marker);
+			});
+		}
+    	marker.id = pId;
+    	if (pDropCallback != null) { 
+    		google.maps.event.addListener(marker, 'dragend', function(mouseEvent) {
+      			_self.geocodeLocation(pId, mouseEvent.latLng.lat(), mouseEvent.latLng.lng(), pDropCallback);
+    		});    
+    	} // endif    
+    },
+    showLayer: function(pUrl) {
+    	if (this.layer != null) {
+    		this.layer.setMap(null);
+    	}
+    	if (pUrl != null) {
+	    	this.layer = new google.maps.KmlLayer({url: pUrl, preserveViewport: false, map: this.map});
+    	} 
+	}
+};
+</script>
+</apex:component>
